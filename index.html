@@ -1,0 +1,347 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#153c32">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Liklik Bisnis">
+<link rel="icon" href="icon-192.png">
+
+<title>Liklik Bisnis Manager</title>
+<style>
+:root{--green:#153c32;--light:#edf5ef;--white:#fff;--border:#dce5df}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7f5;color:#20342b;font:16px Arial,sans-serif}
+header{background:var(--green);color:white;padding:22px 16px}
+header h1{margin:0 0 6px;font-size:24px}
+header p{margin:0;color:#d5e5da;font-size:14px}
+main{max-width:850px;margin:auto;padding:16px}
+nav{display:flex;gap:7px;overflow:auto;margin-bottom:16px}
+nav button{white-space:nowrap;border:1px solid var(--border);
+background:white;padding:11px 13px;border-radius:9px;color:var(--green)}
+nav button.active{background:var(--green);color:white}
+.panel,.stat{background:white;border:1px solid var(--border);
+border-radius:12px;padding:16px;margin-bottom:14px}
+h2{font-size:19px;margin:0 0 14px}
+h3{font-size:16px;margin:0 0 10px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat small{color:#607168}
+.stat strong{display:block;font-size:22px;margin-top:8px;overflow-wrap:anywhere}
+input,select{width:100%;padding:12px;margin:5px 0 12px;
+border:1px solid #cbd8cf;border-radius:8px;font-size:16px;background:white}
+label{font-size:14px;font-weight:bold}
+button{cursor:pointer;font-size:15px}
+.action{background:var(--green);color:white;border:0;padding:12px;
+border-radius:8px;width:100%;font-weight:bold}
+.danger{background:#fff0ed;color:#a52e20;border:0;border-radius:6px;padding:7px}
+.item{padding:12px 0;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item strong{display:block;margin-bottom:5px}
+.muted{font-size:13px;color:#65756b}
+.good{color:#187347}.bad{color:#b43c2b}
+.hidden{display:none!important}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+footer{text-align:center;padding:20px;color:#718077;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌿 Liklik Bisnis Manager</h1>
+  <p>Your business records, in one place · PGK (Kina)</p>
+</header>
+<main>
+  <nav id="nav">
+    <button class="active" data-tab="home">Dashboard</button>
+    <button data-tab="sales">Sales</button>
+    <button data-tab="stock">Stock</button>
+    <button data-tab="expenses">Expenses</button>
+    <button data-tab="debts">Customer debts</button>
+    <button data-tab="backup">Backup</button>
+  </nav>
+
+  <section id="home">
+    <div class="panel">
+      <label for="businessName">Business name</label>
+      <input id="businessName" placeholder="e.g. Mary's Trade Store">
+      <button class="action" onclick="saveBusiness()">Save business name</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>Today's sales</small><strong id="todaySales">K 0.00</strong></div>
+      <div class="stat"><small>Today's expenses</small><strong id="todayExpenses">K 0.00</strong></div>
+      <div class="stat"><small>Estimated profit today</small><strong id="todayProfit">K 0.00</strong></div>
+      <div class="stat"><small>Customers owe</small><strong id="totalDebt">K 0.00</strong></div>
+    </div>
+    <div class="panel">
+      <h2>Business summary</h2>
+      <div id="summary"></div>
+    </div>
+    <div class="panel">
+      <h3>Important</h3>
+      <p class="muted">Sales paid on credit are included in sales and profit estimates, even if the money has not been collected. Profit is estimated using the product cost saved at the time of sale.</p>
+    </div>
+  </section>
+
+  <section id="sales" class="hidden">
+    <div class="panel">
+      <h2>Record a sale</h2>
+      <form id="saleForm">
+        <label>Product</label><select id="saleProduct" required></select>
+        <label>Quantity sold</label><input id="saleQty" type="number" min="1" step="1" value="1" required>
+        <label>Payment method</label>
+        <select id="saleMethod"><option>Cash</option><option>Mobile payment</option><option>Credit</option></select>
+        <label>Customer name (required for credit)</label>
+        <input id="saleCustomer" placeholder="Customer name">
+        <button class="action">Save sale</button>
+      </form>
+    </div>
+    <div class="panel"><h2>Recent sales</h2><div id="salesList"></div></div>
+  </section>
+
+  <section id="stock" class="hidden">
+    <div class="panel">
+      <h2>Add a product</h2>
+      <form id="productForm">
+        <label>Product name</label><input id="pName" required placeholder="e.g. Rice 1kg">
+        <label>Buying cost per unit (K)</label><input id="pCost" type="number" min="0" step=".01" required>
+        <label>Selling price per unit (K)</label><input id="pPrice" type="number" min="0" step=".01" required>
+        <label>Starting quantity</label><input id="pQty" type="number" min="0" step="1" required>
+        <button class="action">Add product</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h2>Stock on hand</h2>
+      <div id="stockList"></div>
+    </div>
+    <div class="panel">
+      <h3>Receive more stock</h3>
+      <form id="restockForm">
+        <label>Product</label><select id="restockProduct" required></select>
+        <label>Quantity received</label><input id="restockQty" type="number" min="1" step="1" required>
+        <label>Buying cost per unit (K)</label><input id="restockCost" type="number" min="0" step=".01" required>
+        <button class="action">Record stock purchase</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="expenses" class="hidden">
+    <div class="panel">
+      <h2>Record an expense</h2>
+      <form id="expenseForm">
+        <label>Expense category</label>
+        <select id="expenseCategory">
+          <option>Transport</option><option>Rent</option><option>Electricity</option>
+          <option>Wages</option><option>Supplies</option><option>Other</option>
+        </select>
+        <label>Amount (K)</label><input id="expenseAmount" type="number" min=".01" step=".01" required>
+        <label>Description</label><input id="expenseNote" placeholder="What was it for?">
+        <button class="action">Save expense</button>
+      </form>
+    </div>
+    <div class="panel"><h2>Expense history</h2><div id="expenseList"></div></div>
+  </section>
+
+  <section id="debts" class="hidden">
+    <div class="panel">
+      <h2>Customer balances</h2>
+      <p class="muted">Credit sales create balances automatically. Record repayments below.</p>
+      <div id="debtList"></div>
+    </div>
+    <div class="panel">
+      <h2>Record repayment</h2>
+      <form id="repayForm">
+        <label>Customer</label><select id="debtCustomer" required></select>
+        <label>Amount received (K)</label><input id="repayAmount" type="number" min=".01" step=".01" required>
+        <button class="action">Save repayment</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="backup" class="hidden">
+    <div class="panel">
+      <h2>Back up your records</h2>
+      <p>Download a backup file and keep it somewhere safe. Export regularly.</p>
+      <button class="action" onclick="exportData()">Download backup</button>
+    </div>
+    <div class="panel">
+      <h2>Restore a backup</h2>
+      <p class="muted">Restoring replaces the current records. Export your current data first.</p>
+      <input id="restoreFile" type="file" accept=".json,application/json">
+      <button class="action" onclick="importData()">Restore backup</button>
+    </div>
+    <div class="panel">
+      <h2>Clear all records</h2>
+      <p class="muted">This permanently removes the app's locally stored data.</p>
+      <button class="danger" onclick="clearData()">Delete all business data</button>
+    </div>
+  </section>
+</main>
+<footer>Liklik Bisnis Manager · First version · Store records safely</footer>
+
+<script>
+const KEY = "liklikBisnisV1";
+const blank = () => ({
+  business:"", products:[], sales:[], expenses:[], repayments:[]
+});
+let db;
+try {
+  db = JSON.parse(localStorage.getItem(KEY)) || blank();
+} catch(e) { db = blank(); }
+
+function persist(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify(db));
+    render();
+  } catch(e) {
+    alert("Could not save data. Export a backup and free up device storage.");
+  }
+}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function money(n){return "K "+Number(n||0).toLocaleString("en-PG",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function today(){return new Date().toLocaleDateString("en-CA")}
+function dateOf(x){return new Date(x).toLocaleString()}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function sum(a,fn){return a.reduce((n,x)=>n+fn(x),0)}
+function remainingDebt(name){
+  let credit=sum(db.sales.filter(s=>s.method==="Credit"&&s.customer===name),s=>s.total);
+  let paid=sum(db.repayments.filter(r=>r.customer===name),r=>r.amount);
+  return Math.max(0,credit-paid);
+}
+function saveBusiness(){
+  db.business=document.getElementById("businessName").value.trim();
+  persist(); alert("Business name saved.");
+}
+document.getElementById("nav").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-tab]");
+  if(!b)return;
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll("main section").forEach(x=>x.classList.toggle("hidden",x.id!==b.dataset.tab));
+});
+document.getElementById("productForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  db.products.push({id:id(),name:document.getElementById("pName").value.trim(),
+    cost:+pCost.value,price:+pPrice.value,qty:+pQty.value});
+  e.target.reset(); persist();
+});
+document.getElementById("saleForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const p=db.products.find(x=>x.id===saleProduct.value), q=+saleQty.value;
+  const method=saleMethod.value, customer=saleCustomer.value.trim();
+  if(!p)return alert("Add a product first.");
+  if(q<1||!Number.isInteger(q))return alert("Enter a whole number quantity.");
+  if(q>p.qty)return alert("Not enough stock available.");
+  if(method==="Credit"&&!customer)return alert("Enter the customer's name.");
+  db.sales.unshift({id:id(),date:new Date().toISOString(),product:p.name,
+    productId:p.id,qty:q,price:p.price,cost:p.cost,total:q*p.price,
+    method,customer:method==="Credit"?customer:""});
+  p.qty-=q;
+  e.target.reset(); saleQty.value=1; persist();
+  alert("Sale saved.");
+});
+document.getElementById("expenseForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  db.expenses.unshift({id:id(),date:new Date().toISOString(),
+    category:expenseCategory.value,amount:+expenseAmount.value,
+    note:expenseNote.value.trim()});
+  e.target.reset();persist();alert("Expense saved.");
+});
+document.getElementById("restockForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const p=db.products.find(x=>x.id===restockProduct.value),q=+restockQty.value,c=+restockCost.value;
+  if(!p)return alert("Select a product.");
+  if(q<1||!Number.isInteger(q))return alert("Quantity must be a whole number.");
+  if(!confirm("Record "+q+" units costing "+money(q*c)+"?"))return;
+  // Weighted average cost preserves a reasonable inventory valuation.
+  p.cost=(p.cost*p.qty+c*q)/(p.qty+q);
+  p.qty+=q;
+  db.expenses.unshift({id:id(),date:new Date().toISOString(),
+    category:"Stock purchase",amount:q*c,note:"Stock: "+p.name,inventory:true});
+  e.target.reset();persist();alert("Stock received.");
+});
+document.getElementById("repayForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const customer=debtCustomer.value,amount=+repayAmount.value;
+  if(!customer)return alert("Select a customer.");
+  if(amount<=0||amount>remainingDebt(customer)+0.001)return alert("Amount exceeds the outstanding debt.");
+  db.repayments.push({id:id(),date:new Date().toISOString(),customer,amount});
+  e.target.reset();persist();alert("Repayment saved.");
+});
+function removeProduct(pid){
+  if(db.sales.some(s=>s.productId===pid))return alert("This product has sales history and cannot be deleted.");
+  if(confirm("Delete this product?")){
+    db.products=db.products.filter(p=>p.id!==pid);persist();
+  }
+}
+function render(){
+  businessName.value=db.business||"";
+  const t=today(),ts=db.sales.filter(s=>s.date.slice(0,10)===t);
+  const es=db.expenses.filter(x=>x.date.slice(0,10)===t);
+  const sales=sum(ts,s=>s.total);
+  const cogs=sum(ts,s=>s.qty*s.cost);
+  const expenses=sum(es.filter(x=>!x.inventory),x=>x.amount);
+  todaySales.textContent=money(sales);
+  todayExpenses.textContent=money(sum(es,x=>x.amount));
+  todayProfit.textContent=money(sales-cogs-expenses);
+  totalDebt.textContent=money(sum([...new Set(db.sales.filter(s=>s.method==="Credit").map(s=>s.customer))],remainingDebt));
+  summary.innerHTML=`<div class="item">Products in stock: <b>${db.products.length}</b></div>
+    <div class="item">Units remaining: <b>${sum(db.products,p=>p.qty)}</b></div>
+    <div class="item">Estimated stock cost value: <b>${money(sum(db.products,p=>p.qty*p.cost))}</b></div>
+    <div class="item">All-time sales: <b>${money(sum(db.sales,s=>s.total))}</b></div>`;
+  saleProduct.innerHTML=db.products.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} · ${money(p.price)} · ${p.qty} left</option>`).join("");
+  restockProduct.innerHTML=db.products.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+  stockList.innerHTML=db.products.length?db.products.map(p=>`<div class="item">
+    <div class="row"><strong>${esc(p.name)}</strong><button class="danger" onclick="removeProduct('${esc(p.id)}')">Delete</button></div>
+    <div>Sell ${money(p.price)} · Cost ${money(p.cost)}</div>
+    <div class="${p.qty<=5?'bad':'muted'}">Quantity: ${p.qty}${p.qty<=5?' · Low stock':''}</div></div>`).join(""):"No products yet.";
+  salesList.innerHTML=db.sales.slice(0,50).map(s=>`<div class="item">
+    <strong>${esc(s.product)} × ${s.qty} — ${money(s.total)}</strong>
+    <div class="muted">${dateOf(s.date)} · ${esc(s.method)} ${s.customer?'· '+esc(s.customer):''}</div>
+  </div>`).join("")||"No sales recorded.";
+  expenseList.innerHTML=db.expenses.slice(0,50).map(x=>`<div class="item">
+    <strong>${esc(x.category)} — ${money(x.amount)}</strong>
+    <div class="muted">${dateOf(x.date)} ${x.note?'· '+esc(x.note):''}</div>
+  </div>`).join("")||"No expenses recorded.";
+  const customers=[...new Set(db.sales.filter(s=>s.method==="Credit").map(s=>s.customer))];
+  debtCustomer.innerHTML=customers.filter(n=>remainingDebt(n)>0).map(n=>`<option value="${esc(n)}">${esc(n)} — ${money(remainingDebt(n))}</option>`).join("");
+  debtList.innerHTML=customers.map(n=>`<div class="item"><strong>${esc(n)}</strong>
+    <div>Outstanding: <b>${money(remainingDebt(n))}</b></div>
+    <div class="muted">Credit sales: ${money(sum(db.sales.filter(s=>s.method==="Credit"&&s.customer===n),s=>s.total))} · Repaid: ${money(sum(db.repayments.filter(r=>r.customer===n),r=>r.amount))}</div></div>`).join("")||"No customer debts.";
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="liklik-bisnis-backup-"+today()+".json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+async function importData(){
+  const file=restoreFile.files[0];if(!file)return alert("Choose a backup file first.");
+  if(!confirm("Replace all current data with this backup? Export your current data first."))return;
+  try{
+    const x=JSON.parse(await file.text());
+    if(!x||!Array.isArray(x.products)||!Array.isArray(x.sales)||!Array.isArray(x.expenses)||!Array.isArray(x.repayments))throw Error();
+    db=x;persist();alert("Backup restored.");
+  }catch(e){alert("This backup file is invalid.");}
+}
+function clearData(){
+  if(!confirm("Permanently delete ALL business records on this device? Export a backup first."))return;
+  if(!confirm("Are you absolutely sure? This cannot be undone."))return;
+  db=blank();persist();alert("Records deleted.");
+}
+render();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(err => {
+      console.log("Offline setup will be available after the app is hosted securely.", err);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
